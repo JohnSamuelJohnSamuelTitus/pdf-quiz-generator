@@ -184,6 +184,22 @@ export const quizzesApi = {
     return request<{ success: boolean; questions: QuizQuestion[]; mode: string }>(`/quizzes/generate?${qs}`);
   },
 
+  generateFromPdf: (formData: FormData) =>
+    request<{
+      success: boolean;
+      document: {
+        title: string;
+        filename: string;
+        pageCount: number;
+        wordCount: number;
+        headings: string[];
+      };
+      questions: QuizQuestion[];
+    }>('/quizzes/generate-from-pdf', {
+      method: 'POST',
+      body: formData
+    }),
+
   submit: (payload: {
     topicId: string;
     difficulty: string;

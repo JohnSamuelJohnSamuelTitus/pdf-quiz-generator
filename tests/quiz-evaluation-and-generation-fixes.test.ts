@@ -293,5 +293,27 @@ Textbook Reference: Cormen et al.
         expect(pct).toBe(tc.expectedPct);
       }
     });
+
+    it('generateGroundedFromText extracts rich questions directly from document text', () => {
+      const lectureSample = [
+        'Virtual memory is a memory management technique providing an idealized abstraction of storage.',
+        'The Translation Lookaside Buffer is a high-speed hardware cache used to reduce memory access latency.',
+        'Paging is a memory management scheme that stores and retrieves data from secondary storage.'
+      ];
+
+      const questions = QuestionExtractorService.generateGroundedFromText(
+        'Operating Systems',
+        lectureSample,
+        3,
+        'moderate'
+      );
+
+      expect(questions.length).toBeGreaterThanOrEqual(1);
+      const q = questions[0];
+      expect(q.questionText).toBeDefined();
+      expect(q.correctAnswer).toBeDefined();
+      expect(q.options.length).toBeGreaterThanOrEqual(2);
+      expect(q.explanation).toContain('Source text excerpt');
+    });
   });
 });

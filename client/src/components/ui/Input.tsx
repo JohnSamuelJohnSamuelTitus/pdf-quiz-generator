@@ -36,15 +36,15 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             disabled={disabled}
             className={twMerge(
               clsx(
-                'w-full text-sm rounded-lg border bg-white px-3.5 py-2 text-slate-900 placeholder:text-slate-400 transition-colors',
-                'focus:outline-none focus:ring-2 focus:ring-slate-950 focus:border-transparent',
-                'dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:ring-slate-200',
+                'w-full text-sm rounded-xl border bg-zinc-950 px-3.5 py-2.5 text-white placeholder:text-zinc-500 transition-colors',
+                'focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
+                'border-zinc-800',
                 leftIcon && 'pl-9',
                 rightIcon && 'pr-9',
                 error
-                  ? 'border-rose-400 focus:ring-rose-500 dark:border-rose-500'
-                  : 'border-slate-200 dark:border-slate-800',
-                disabled && 'opacity-60 bg-slate-50 dark:bg-slate-800/40 cursor-not-allowed',
+                  ? 'border-rose-500 focus:ring-rose-500'
+                  : 'border-zinc-800 hover:border-zinc-700',
+                disabled && 'opacity-60 bg-zinc-900 cursor-not-allowed',
                 className
               )
             )}

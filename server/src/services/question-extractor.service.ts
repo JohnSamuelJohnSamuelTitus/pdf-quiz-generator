@@ -86,7 +86,7 @@ export class QuestionExtractorService {
   static generateGroundedFromText(
     topicTitle: string,
     contentChunks: string[],
-    amount: number = 3,
+    amount: number = 5,
     difficulty: DifficultyLevel = 'moderate'
   ): QuizQuestion[] {
     const questions: QuizQuestion[] = [];
@@ -95,55 +95,74 @@ export class QuestionExtractorService {
     // Extract sentences containing definitions, models, or constraints
     const sentences = joinedText
       .split(/(?<=[.?!])\s+/)
-      .map(s => s.trim())
-      .filter(s => s.length > 30 && s.length < 200);
+      .map(s => s.trim().replace(/^[\*\-\•\d\.\)]+\s*/, ''))
+      .filter(s => s.length > 25 && s.length < 250);
+
+    // Extract potential subjects and key terms across sentences for rich distractors
+    const extractedPredicates: string[] = [];
+
+    const splitRegex = /\b(?:is defined as|is known as|refers to|represents|ensures|requires|is called|is used for|consists of|contains|provides|allows|causes|results in|implements|relies on|is)\b/i;
+
+    for (const sentence of sentences) {
+      const parts = sentence.split(splitRegex);
+      if (parts.length >= 2 && parts[0].trim().length > 3 && parts[1].trim().length > 10) {
+        extractedPredicates.push(parts[1].trim().replace(/[.?!]$/, ''));
+      }
+    }
 
     for (let i = 0; i < sentences.length && questions.length < amount; i++) {
       const sentence = sentences[i];
-      const lower = sentence.toLowerCase();
 
-      // Check for definitional sentence: "X is defined as Y" or "X represents Y"
-      if (lower.includes(' is ') || lower.includes(' represents ') || lower.includes(' ensures ') || lower.includes(' requires ')) {
-        const parts = sentence.split(/\b(?:is|represents|ensures|requires)\b/i);
-        if (parts.length >= 2 && parts[0].trim().length > 3 && parts[1].trim().length > 10) {
-          const subjectPart = parts[0].trim();
-          const predicatePart = parts[1].trim().replace(/[.?!]$/, '');
+      // Check for definitional or operational sentence
+      const parts = sentence.split(splitRegex);
+      if (parts.length >= 2 && parts[0].trim().length > 3 && parts[1].trim().length > 8) {
+        const subjectPart = parts[0].trim();
+        const predicatePart = parts[1].trim().replace(/[.?!]$/, '');
 
-          // Generate Multiple Choice question
-          const options = [
-            predicatePart,
-            `Functions independently without any causal relationship to ${subjectPart}`,
-            `Contradicts the core methodology established for ${topicTitle}`,
-            `Applies only under extreme hypothetical conditions and has no standard relevance`
-          ].sort(() => 0.5 - Math.random());
+        // Gather distractors from other sentences or contextual fallbacks
+        const otherPredicates = extractedPredicates.filter(p => p !== predicatePart);
+        const distractor1 = otherPredicates.length > 0
+          ? otherPredicates[Math.floor(Math.random() * otherPredicates.length)]
+          : `Functions independently without any causal relationship to ${subjectPart}`;
+        const distractor2 = otherPredicates.length > 1
+          ? otherPredicates[(Math.floor(Math.random() * otherPredicates.length) + 1) % otherPredicates.length]
+          : `Contradicts the core methodology established for ${topicTitle}`;
+        const distractor3 = `Applies only under extreme hypothetical conditions and has no standard relevance in ${topicTitle}`;
 
-          questions.push({
-            id: `grounded-mcq-${Date.now()}-${i}`,
-            topicId: topicTitle.toLowerCase().replace(/\s+/g, '-'),
-            questionType: 'multiple_choice',
-            questionText: `According to the verified study material for "${topicTitle}", which of the following correctly describes ${subjectPart}?`,
-            options,
-            correctAnswer: predicatePart,
-            explanation: `Source text excerpt: "${sentence}" directly confirms this relationship.`,
-            difficulty,
-            category: topicTitle,
-            source: 'original_engine'
-          });
+        const rawOptions = [predicatePart, distractor1, distractor2, distractor3];
+        const uniqueOptions = Array.from(new Set(rawOptions));
+        while (uniqueOptions.length < 4) {
+          uniqueOptions.push(`Alternative perspective on ${subjectPart} (${uniqueOptions.length})`);
         }
+
+        const options = uniqueOptions.sort(() => 0.5 - Math.random());
+
+        questions.push({
+          id: `grounded-mcq-${Date.now()}-${i}`,
+          topicId: topicTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+          questionType: 'multiple_choice',
+          questionText: `According to the document for "${topicTitle}", which of the following correctly describes ${subjectPart}?`,
+          options,
+          correctAnswer: predicatePart,
+          explanation: `Source text excerpt: "${sentence}" directly confirms this relationship.`,
+          difficulty,
+          category: topicTitle,
+          source: 'original_engine'
+        });
       }
 
       // Generate True/False question (alternating True and False for pedagogical balance)
-      if (questions.length < amount && sentence.length > 40) {
+      if (questions.length < amount && sentence.length > 35) {
         const isTrueQ = questions.length % 2 === 0;
         if (isTrueQ) {
           questions.push({
             id: `grounded-tf-${Date.now()}-${i}`,
-            topicId: topicTitle.toLowerCase().replace(/\s+/g, '-'),
+            topicId: topicTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
             questionType: 'true_false',
-            questionText: `True or False: In the verified study material for "${topicTitle}", it is stated that: "${sentence}"`,
+            questionText: `True or False: In the document for "${topicTitle}", it is stated that: "${sentence}"`,
             options: ['True', 'False'],
             correctAnswer: 'True',
-            explanation: `True. Verified text excerpt directly confirmed in course material: "${sentence}".`,
+            explanation: `True. Verified text excerpt directly confirmed in document: "${sentence}".`,
             difficulty: 'foundational',
             category: topicTitle,
             source: 'original_engine'
@@ -151,12 +170,12 @@ export class QuestionExtractorService {
         } else {
           questions.push({
             id: `grounded-tf-${Date.now()}-${i}`,
-            topicId: topicTitle.toLowerCase().replace(/\s+/g, '-'),
+            topicId: topicTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
             questionType: 'true_false',
             questionText: `True or False: In "${topicTitle}", the core principles contradict the following concept: "${sentence}"`,
             options: ['True', 'False'],
             correctAnswer: 'False',
-            explanation: `False. The course material explicitly affirms this concept as an integral principle of "${topicTitle}".`,
+            explanation: `False. The document explicitly affirms this concept as an integral principle: "${sentence}".`,
             difficulty: 'moderate',
             category: topicTitle,
             source: 'original_engine'

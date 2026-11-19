@@ -1,10 +1,39 @@
 import { Router, Response } from 'express';
+import multer from 'multer';
 import { query, queryOne, run } from '../db/index.js';
 import { requireSession, AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { QuestionGeneratorService } from '../services/question-generator.service.js';
-import { DifficultyLevel, QuizAttempt, QuestionType } from '../../../shared/types.js';
+import { PdfExtractionService } from '../services/pdf-extraction.service.js';
+import { QuestionExtractorService } from '../services/question-extractor.service.js';
+import { DifficultyLevel, QuizAttempt, QuestionType, QuizQuestion } from '../../../shared/types.js';
 
 const router = Router();
+
+// Configure Multer for memory upload
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 25 * 1024 * 1024 // 25MB
+  },
+  fileFilter: (_req, file, cb) => {
+    const allowedMimes = [
+      'application/pdf',
+      'text/plain',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/msword'
+    ];
+    if (
+      allowedMimes.includes(file.mimetype) ||
+      file.originalname.endsWith('.pdf') ||
+      file.originalname.endsWith('.txt') ||
+      file.originalname.endsWith('.docx')
+    ) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file format. Only PDF, TXT, and DOCX files are supported.'));
+    }
+  }
+});
 
 // Helper to normalize and evaluate short answers
 export function normalizeAnswer(str: string): string {
@@ -122,6 +151,161 @@ router.get('/generate', async (req, res: Response) => {
   } catch (err: any) {
     console.error('[Quizzes] Generation error:', err);
     return res.status(500).json({ success: false, error: 'Failed to generate quiz questions' });
+  }
+});
+
+// POST /api/quizzes/generate-from-pdf (Upload PDF/document or text and generate instant quiz)
+router.post('/generate-from-pdf', upload.single('file'), async (req, res: Response) => {
+  try {
+    const file = req.file;
+    const rawText = (req.body.text || req.body.rawText || '').trim();
+    const amount = Math.min(20, Math.max(3, parseInt(req.body.amount, 10) || 5));
+    const difficulty: DifficultyLevel = req.body.difficulty || 'moderate';
+    const questionTypesParam = (req.body.questionTypes as string) || 'multiple_choice,true_false';
+    const allowedTypes: QuestionType[] = questionTypesParam
+      .split(',')
+      .map((t: string) => t.trim())
+      .filter((t: string) => ['multiple_choice', 'true_false', 'short_answer'].includes(t)) as QuestionType[];
+
+    let extractedText = '';
+    let pageCount = 1;
+    let originalName = 'Lecture Notes / Document';
+    let headings: string[] = [];
+
+    if (file) {
+      originalName = file.originalname;
+      const lowerName = file.originalname.toLowerCase();
+      if (file.mimetype === 'application/pdf' || lowerName.endsWith('.pdf')) {
+        const extracted = await PdfExtractionService.extractPdf(file.buffer);
+        extractedText = extracted.text;
+        pageCount = extracted.pageCount;
+        headings = extracted.headings;
+      } else if (lowerName.endsWith('.docx') || file.mimetype.includes('wordprocessingml')) {
+        const extracted = await PdfExtractionService.extractDocx(file.buffer);
+        extractedText = extracted.text;
+        pageCount = extracted.pageCount;
+        headings = extracted.headings;
+      } else {
+        const extracted = PdfExtractionService.extractTxt(file.buffer);
+        extractedText = extracted.text;
+        pageCount = extracted.pageCount;
+        headings = extracted.headings;
+      }
+    } else if (rawText) {
+      extractedText = rawText;
+      originalName = req.body.title || 'Pasted Notes';
+    } else {
+      return res.status(400).json({
+        success: false,
+        error: 'Please upload a PDF document or provide text to generate a quiz.'
+      });
+    }
+
+    if (!extractedText || extractedText.trim().length < 25) {
+      return res.status(400).json({
+        success: false,
+        error: 'Document contains insufficient readable text. If this is a scanned PDF without a text layer, please provide a searchable PDF or paste notes.'
+      });
+    }
+
+    const cleanTitle = originalName.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ');
+    const displayTitle = headings.length > 0 && headings[0].length < 60 ? headings[0] : cleanTitle;
+
+    // 1. Check if the PDF contains pre-existing questions/exercises
+    const extractedQs = QuestionExtractorService.extractQuestionsFromText(
+      'doc-temp',
+      'proj-temp',
+      extractedText,
+      originalName
+    );
+
+    const generatedQuestions: QuizQuestion[] = [];
+
+    // Convert pre-existing questions found in the document
+    if (extractedQs.length > 0) {
+      for (const eq of extractedQs) {
+        if (generatedQuestions.length >= amount) break;
+        if (allowedTypes.length > 0 && !allowedTypes.includes(eq.questionType)) continue;
+
+        const correctAnswer = eq.answerText || (eq.options && eq.options[0]) || 'Option A';
+        const options = eq.options && eq.options.length >= 2
+          ? eq.options
+          : [correctAnswer, 'Alternative option B', 'Alternative option C', 'Alternative option D'];
+
+        generatedQuestions.push({
+          id: `pdf-q-ext-${Date.now()}-${generatedQuestions.length}`,
+          topicId: displayTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+          questionType: eq.questionType,
+          questionText: eq.questionText,
+          options,
+          correctAnswer,
+          explanation: `Extracted directly from "${originalName}".`,
+          difficulty,
+          category: displayTitle,
+          source: 'original_engine'
+        });
+      }
+    }
+
+    // 2. Generate grounded questions from sentences / paragraphs of the PDF text
+    if (generatedQuestions.length < amount) {
+      const paragraphs = extractedText
+        .split(/\n\s*\n/)
+        .map(p => p.trim())
+        .filter(p => p.length > 30);
+
+      const needed = amount - generatedQuestions.length;
+      const grounded = QuestionExtractorService.generateGroundedFromText(
+        displayTitle,
+        paragraphs.length > 0 ? paragraphs : [extractedText],
+        needed * 2,
+        difficulty
+      );
+
+      for (const gq of grounded) {
+        if (generatedQuestions.length >= amount) break;
+        if (allowedTypes.length > 0 && !allowedTypes.includes(gq.questionType)) continue;
+        generatedQuestions.push(gq);
+      }
+    }
+
+    // 3. Fallback to curriculum/topic question generation if more are still needed
+    if (generatedQuestions.length < amount) {
+      const needed = amount - generatedQuestions.length;
+      const topicSubtopics = headings.length > 0 ? headings.slice(0, 4) : [`${displayTitle} fundamentals`, `applications of ${displayTitle}`];
+      const fallback = QuestionExtractorService.generateCurriculumQuestions(
+        displayTitle,
+        topicSubtopics,
+        needed,
+        difficulty
+      );
+      for (const fq of fallback) {
+        if (generatedQuestions.length >= amount) break;
+        if (allowedTypes.length > 0 && !allowedTypes.includes(fq.questionType)) continue;
+        generatedQuestions.push(fq);
+      }
+    }
+
+    // Validate and normalize all questions
+    const validated = generatedQuestions.map(q => QuestionGeneratorService.validateAndNormalizeQuestion(q));
+
+    return res.json({
+      success: true,
+      document: {
+        title: displayTitle,
+        filename: originalName,
+        pageCount,
+        wordCount: extractedText.split(/\s+/).filter(Boolean).length,
+        headings: headings.slice(0, 5)
+      },
+      questions: validated
+    });
+  } catch (err: any) {
+    console.error('[Quizzes] PDF Generation error:', err);
+    return res.status(500).json({
+      success: false,
+      error: err.message || 'Failed to process document and generate quiz.'
+    });
   }
 });
 

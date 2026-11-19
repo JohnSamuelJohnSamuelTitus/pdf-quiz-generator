@@ -13,11 +13,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
     const saved = localStorage.getItem('learnsphere_theme') as Theme;
     if (saved) return saved;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    return 'dark';
   });
 
   useEffect(() => {
     const root = document.documentElement;
+    root.classList.add('dark');
     if (theme === 'dark') {
       root.classList.add('dark');
     } else {

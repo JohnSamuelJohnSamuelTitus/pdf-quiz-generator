@@ -5,168 +5,134 @@
 @layer base {
   :root {
     --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --font-serif: 'Playfair Display', Georgia, Cambria, serif;
-    --font-frontier: 'Cinzel', 'Playfair Display', serif;
   }
 
   body {
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     letter-spacing: -0.011em;
-    background-color: #211A15;
-    color: #F5EBD8;
+    background-color: #09090b;
+    color: #f4f4f5;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 
-  /* Custom Frontier Leather & Gold Scrollbar */
+  /* Custom Sleek Dark Scrollbar */
   ::-webkit-scrollbar {
-    width: 7px;
-    height: 7px;
+    width: 6px;
+    height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #1C1510;
+    background: #09090b;
   }
   ::-webkit-scrollbar-thumb {
-    background: #3D2D21;
-    border: 1px solid rgba(177, 138, 76, 0.25);
+    background: #27272a;
     border-radius: 4px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #B18A4C;
+    background: #3f3f46;
   }
 }
 
-/* =========================================================================
-   RED DEAD REDEMPTION 2 — FRONTIER JOURNAL STYLING SYSTEM
-   ========================================================================= */
-
-/* Main Canvas & Dark Leather Framing */
+/* Dark UI Utilities */
 .bg-rdr-canvas {
-  background-color: #211A15;
-  background-image: 
-    radial-gradient(circle at 50% 0%, rgba(177, 138, 76, 0.08) 0%, transparent 60%),
-    radial-gradient(circle at 10% 40%, rgba(73, 53, 34, 0.12) 0%, transparent 40%),
-    radial-gradient(circle at 90% 80%, rgba(73, 53, 34, 0.12) 0%, transparent 40%),
-    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.02'/%3E%3C/svg%3E");
+  background-color: #09090b;
 }
 
-/* Dark Leather Panel */
 .rdr-leather-card {
-  background-color: #281F19;
-  border: 1px solid #3D2D21;
-  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  color: #F5EBD8;
+  background-color: #18181b;
+  border: 1px solid #27272a;
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.5);
+  color: #f4f4f5;
 }
 
 .rdr-leather-surface {
-  background-color: #30241B;
-  border: 1px solid #493522;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  color: #F5EBD8;
+  background-color: #18181b;
+  border: 1px solid #27272a;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  color: #f4f4f5;
 }
 
-/* Warm Parchment & Aged Paper Surfaces */
 .rdr-journal-bg {
-  background-color: #D9C39B;
-  background-image: 
-    radial-gradient(circle at 15% 15%, rgba(73, 53, 34, 0.08) 0%, transparent 35%),
-    radial-gradient(circle at 85% 85%, rgba(73, 53, 34, 0.08) 0%, transparent 35%),
-    linear-gradient(to right, rgba(48, 36, 27, 0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(48, 36, 27, 0.04) 1px, transparent 1px);
-  background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
-  color: #30251B;
-  border: 1px solid #CBB184;
+  background-color: #18181b;
+  border: 1px solid #27272a;
+  color: #f4f4f5;
 }
 
 .rdr-paper-card {
-  background-color: #F0E4C9;
-  border: 1px solid #CBB184;
-  box-shadow: 0 6px 20px rgba(33, 26, 21, 0.12), 0 1px 3px rgba(33, 26, 21, 0.08);
-  color: #30251B;
+  background-color: #18181b;
+  border: 1px solid #27272a;
+  color: #f4f4f5;
 }
 
-/* Typography & Colors */
 .text-rdr-gold {
-  color: #B18A4C;
+  color: #818cf8;
 }
 
 .text-rdr-gold-bright {
-  color: #C69B56;
+  color: #a5b4fc;
 }
 
 .text-rdr-ink {
-  color: #30251B;
+  color: #f4f4f5;
 }
 
 .text-rdr-warm {
-  color: #F5EBD8;
+  color: #ffffff;
 }
 
 .text-rdr-muted {
-  color: #8B7861;
+  color: #a1a1aa;
 }
 
-/* Frontier Buttons */
+/* Primary and Secondary button fallback utilities */
 .btn-frontier-primary {
-  background: linear-gradient(180deg, #C69B56 0%, #B18A4C 100%);
-  color: #211A15;
-  border: 1px solid #D9C39B;
-  font-family: 'Cinzel', serif;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  background: #6366f1;
+  color: #ffffff;
+  border: 1px solid #818cf8;
+  font-weight: 600;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 14px rgba(177, 138, 76, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
 }
 
 .btn-frontier-primary:hover {
-  background: linear-gradient(180deg, #D4AF37 0%, #C69B56 100%);
-  box-shadow: 0 6px 20px rgba(177, 138, 76, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.4);
-  transform: translateY(-1px);
+  background: #4f46e5;
+  box-shadow: 0 0 16px rgba(99, 102, 241, 0.4);
 }
 
 .btn-frontier-secondary {
-  background: #30241B;
-  border: 1px solid #B18A4C;
-  color: #F5EBD8;
-  font-family: 'Cinzel', serif;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  background: #18181b;
+  border: 1px solid #27272a;
+  color: #f4f4f5;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
 }
 
 .btn-frontier-secondary:hover {
-  background: #493522;
-  border-color: #C69B56;
-  color: #F5EBD8;
-  transform: translateY(-1px);
+  background: #27272a;
+  border-color: #3f3f46;
+  color: #ffffff;
 }
 
 .btn-frontier-outline {
   background: transparent;
-  border: 1px solid rgba(177, 138, 76, 0.4);
-  color: #D9C39B;
-  font-family: 'Cinzel', serif;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  border: 1px solid #27272a;
+  color: #a1a1aa;
   transition: all 0.2s ease;
+  border-radius: 8px;
 }
 
 .btn-frontier-outline:hover {
-  border-color: #B18A4C;
-  background: rgba(177, 138, 76, 0.1);
-  color: #F5EBD8;
+  border-color: #6366f1;
+  color: #ffffff;
+  background: rgba(99, 102, 241, 0.1);
 }
 
-/* Frontier Decorative Dividers */
 .rdr-divider {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 14px;
-  color: #B18A4C;
-  font-family: 'Cinzel', serif;
+  color: #71717a;
   font-size: 11px;
-  letter-spacing: 0.25em;
   margin: 1.5rem 0;
 }
 
@@ -175,44 +141,5 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: linear-gradient(to right, transparent, #B18A4C 50%, transparent);
-}
-
-/* Vintage Wax Seal & Stamps */
-.rdr-stamp {
-  border: 1.5px dashed #B18A4C;
-  color: #B18A4C;
-  font-family: 'Cinzel', serif;
-  text-transform: uppercase;
-  letter-spacing: 0.15em;
-  padding: 4px 10px;
-  border-radius: 3px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.rdr-chapter-badge {
-  background: #30241B;
-  color: #B18A4C;
-  border: 1px solid #B18A4C;
-  font-family: 'Cinzel', serif;
-  font-size: 10px;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  padding: 2px 8px;
-  border-radius: 2px;
-}
-
-/* Frontier Nav Glass */
-.rdr-nav {
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  background: rgba(33, 26, 21, 0.94);
-  border-bottom: 1px solid #3D2D21;
-}
-
-/* Vignette effect for cinematic imagery */
-.rdr-vignette {
-  box-shadow: inset 0 0 100px rgba(33, 26, 21, 0.8), inset 0 0 200px rgba(28, 21, 16, 0.6);
+  background: #27272a;
 }
